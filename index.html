@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Hill Chart with D3.js</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+
+            .task {
+                cursor: pointer;
+                font-size: 12px;
+            }
+
+            .task-label {
+                fill: black;
+                font-size: 12px;
+            }
+
+            .task-point {
+                /* fill: steelblue; */
+                cursor: grab;
+            }
+
+            .hill-path {
+                stroke: gray;
+                stroke-width: 2;
+                fill: none;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Hill Chart</h1>
+        <svg id="chart" width="800" height="400"></svg>
+
+        <div>
+            <h3>Edit Task</h3>
+            <label for="taskLabel">Task Label:</label>
+            <input type="text" id="taskLabel" />
+            <label for="taskColor">Task Color:</label>
+            <input type="color" id="taskColor" />
+            <button id="updateTask">Update Task</button>
+        </div>
+
+        <script>
+            // Set up dimensions and SVG canvas
+            const width = 800,
+                height = 400;
+            const svg = d3.select("#chart");
+
+            const hillFn = (point) =>
+                150 * Math.sin((Math.PI / 400) * (point + 200)) + 200;
+
+            // Generate main hill curve points
+            const hillPoints = d3.range(50, 750, 1).map((x) => ({
+                x: x,
+                y: hillFn(x),
+            }));
+
+            // Create the hill path
+            const hillPathGenerator = d3
+                .line()
+                .x((d) => d.x)
+                .y((d) => d.y)
+                .curve(d3.curveBasis);
+
+            svg.append("path")
+                .attr("d", hillPathGenerator(hillPoints))
+                .attr("class", "hill-path");
+
+            // Dashed vertical line at the peak
+            svg.append("line")
+                .attr("x1", 400)
+                .attr("y1", 50)
+                .attr("x2", 400)
+                .attr("y2", 350)
+                .attr("stroke", "gray")
+                .attr("stroke-dasharray", "5,5");
+
+            // Text labels
+            svg.append("text")
+                .attr("x", 200)
+                .attr("y", 350)
+                .attr("text-anchor", "middle")
+                .text("FIGURING THINGS OUT");
+
+            svg.append("text")
+                .attr("x", 600)
+                .attr("y", 350)
+                .attr("text-anchor", "middle")
+                .text("MAKING IT HAPPEN");
+
+            // Task list data (initial positions, labels, and colors)
+            let tasks = [
+                {
+                    id: 1,
+                    label: "Task 1",
+                    x: 150,
+                    y: hillFn(150),
+                    color: "steelblue",
+                },
+                {
+                    id: 2,
+                    label: "Task 2",
+                    x: 350,
+                    y: hillFn(350),
+                    color: "orange",
+                },
+                {
+                    id: 3,
+                    label: "Task 3",
+                    x: 600,
+                    y: hillFn(600),
+                    color: "green",
+                },
+            ];
+
+            // Create draggable task points
+            const taskPoints = svg
+                .selectAll(".task")
+                .data(tasks)
+                .enter()
+                .append("g")
+                .attr("class", "task")
+                .attr("transform", (d) => `translate(${d.x},${d.y})`)
+                .call(
+                    d3
+                        .drag()
+                        .on("start", dragStarted)
+                        .on("drag", dragged)
+                        .on("end", dragEnded),
+                );
+
+            // Add circles for task points
+            taskPoints
+                .append("circle")
+                .attr("r", 10)
+                .attr("class", "task-point")
+                .attr("fill", (d) => d.color);
+
+            // Add text labels for each task
+            taskPoints
+                .append("text")
+                .attr("class", "task-label")
+                .attr("x", 15)
+                .attr("y", 5)
+                .text((d) => d.label);
+
+            // Drag event handlers
+            function dragStarted(event, d) {
+                d3.select(this).select("circle").attr("cursor", "grabbing");
+            }
+
+            function dragged(event, d) {
+                d.x = Math.max(50, Math.min(750, event.x)); // Constrain x to hill range
+                d.y = hillFn(d.x); // Get y based on x using hillFn
+                d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+            }
+
+            function dragEnded(event, d) {
+                d3.select(this).select("circle").attr("cursor", "grab");
+            }
+
+            // Edit task functionality
+            let selectedTask = null;
+            taskPoints.on("click", function (event, d) {
+                selectedTask = d;
+                document.getElementById("taskLabel").value = d.label;
+                document.getElementById("taskColor").value = d.color;
+            });
+
+            // Update task based on form input
+            // Ensure task color and label update properly
+            document
+                .getElementById("updateTask")
+                .addEventListener("click", () => {
+                    if (selectedTask) {
+                        const newLabel =
+                            document.getElementById("taskLabel").value;
+                        const newColor =
+                            document.getElementById("taskColor").value;
+
+                        selectedTask.label = newLabel;
+                        selectedTask.color = newColor;
+
+                        // Update the selected task's label and color on the chart
+                        taskPoints
+                            .filter((d) => d.id === selectedTask.id)
+                            .select("text")
+                            .text((d) => d.label);
+
+                        taskPoints
+                            .filter((d) => d.id === selectedTask.id)
+                            .select("circle")
+                            .attr("fill", (d) => d.color);
+                    }
+                });
+        </script>
+    </body>
+</html>
