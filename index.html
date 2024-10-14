@@ -3,11 +3,13 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Hill Chart with D3.js</title>
+        <title>Hill Chart</title>
         <script src="https://d3js.org/d3.v7.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic" />
         <style>
             body {
                 font-family: Arial, sans-serif;
+                margin: 20px;
             }
 
             .task {
@@ -21,7 +23,6 @@
             }
 
             .task-point {
-                /* fill: steelblue; */
                 cursor: grab;
             }
 
@@ -30,19 +31,23 @@
                 stroke-width: 2;
                 fill: none;
             }
+
+            .form-container {
+                margin-top: 20px;
+            }
         </style>
     </head>
     <body>
         <h1>Hill Chart</h1>
         <svg id="chart" width="800" height="400"></svg>
 
-        <div>
+        <div class="form-container">
             <h3>Edit Task</h3>
-            <label for="taskLabel">Task Label:</label>
-            <input type="text" id="taskLabel" />
-            <label for="taskColor">Task Color:</label>
-            <input type="color" id="taskColor" />
-            <button id="updateTask">Update Task</button>
+            <div class="fourth">
+                <input class="stack" type="text" id="taskLabel" />
+                <input class="stack" type="color" id="taskColor" />
+                <button id="updateTask" class="stack">Update Task</button>
+            </div>
         </div>
 
         <script>
@@ -100,21 +105,21 @@
                     label: "Task 1",
                     x: 150,
                     y: hillFn(150),
-                    color: "steelblue",
+                    color: "#1f77b4",
                 },
                 {
                     id: 2,
                     label: "Task 2",
                     x: 350,
                     y: hillFn(350),
-                    color: "orange",
+                    color: "#ff7f0e",
                 },
                 {
                     id: 3,
                     label: "Task 3",
                     x: 600,
                     y: hillFn(600),
-                    color: "green",
+                    color: "#2ca02c",
                 },
             ];
 
