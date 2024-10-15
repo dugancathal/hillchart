@@ -44,7 +44,7 @@
             id="chart"
             width="800"
             height="400"
-            class="bg-white shadow-md rounded-lg"
+            class="bg-white shadow-md rounded-lg print:shadow-none"
             role="img"
             aria-labelledby="chart-title chart-desc"
         >
@@ -53,104 +53,221 @@
         </svg>
 
         <section
-            class="tasks-container mt-10 bg-white p-6 rounded-lg shadow-md w-full max-w-2xl"
+            class="tasks-container mt-10 bg-white p-6 rounded-lg shadow-md w-full max-w-2xl print:shadow-none"
             aria-labelledby="tasks-title"
         >
             <div class="flex items-center justify-between">
                 <h3 id="tasks-title" class="text-xl font-semibold">Tasks</h3>
-                <button id="addTask" class="py-1 px-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
+                <button
+                    id="addTask"
+                    class="py-1 px-2 bg-green-500 text-white rounded hover:bg-green-600 transition print:hidden"
+                >
                     <i class="fa-regular fa-square-plus"></i>
                 </button>
             </div>
 
-            <ul id="taskList" class="space-y-4 mt-4">
+            <ul id="taskList" class="space-y-2 mt-4">
                 <!-- Dynamic task items will be inserted here -->
             </ul>
         </section>
-        <button id="exportPNG" class="py-1 px-4 mt-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+        <button
+            id="exportPNG"
+            class="py-1 px-4 mt-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition print:hidden"
+        >
             Export PNG
         </button>
 
         <script>
+            // Constants
             const width = 800,
-                height = 400;
+                height = 400,
+                xMin = 50,
+                xMax = 750;
+            const hillFn = (x) => 150 * Math.sin((Math.PI * (x + 200)) / 400) + 200;
+            const colorPalette = ["#3498db", "#e74c3c", "#2ecc71", "#9b59b6", "#f1c40f"];
 
             const svg = d3.select("#chart").attr("width", width).attr("height", height);
-
-            const hillFn = (x) => 150 * Math.sin((Math.PI * (x + 200)) / 400) + 200;
-            const hillPoints = d3.range(50, 750).map((x) => ({ x, y: hillFn(x) }));
-
-            svg.append("path")
-                .datum(hillPoints)
-                .attr("class", "hill-path")
-                .attr(
-                    "d",
-                    d3
-                        .line()
-                        .x((d) => d.x)
-                        .y((d) => d.y)
-                        .curve(d3.curveBasis),
-                );
-
-            svg.append("line")
-                .attr("x1", 400)
-                .attr("x2", 400)
-                .attr("y1", 100)
-                .attr("y2", 350)
-                .attr("stroke", "gray")
-                .attr("stroke-dasharray", "5,5");
-
-            const labels = [
-                { x: 200, text: "FIGURING THINGS OUT" },
-                { x: 600, text: "MAKING IT HAPPEN" },
-            ];
-
-            labels.forEach(({ x, text }) => {
-                svg.append("text")
-                    .attr("x", x)
-                    .attr("y", 350)
-                    .attr("text-anchor", "middle")
-                    .attr("font-size", 12)
-                    .text(text);
-            });
-
             let tasks = [
-                { id: 1, label: "Task 1", x: 150, color: "#1f77b4" },
-                { id: 2, label: "Task 2", x: 350, color: "#ff7f0e" },
-                { id: 3, label: "Task 3", x: 600, color: "#2ca02c" },
+                { id: 1, label: "Task 1", x: 150, color: "#1f77b4", completed: false },
+                { id: 2, label: "Task 2", x: 350, color: "#ff7f0e", completed: false },
+                { id: 3, label: "Task 3", x: 600, color: "#2ca02c", completed: false },
             ].map((d) => ({ ...d, y: hillFn(d.x) }));
 
-            const xMin = 50,
-                xMax = 750;
-
-            const taskPoints = svg
-                .selectAll(".task")
-                .data(tasks)
-                .enter()
-                .append("g")
-                .attr("class", "task")
-                .attr("transform", (d) => `translate(${d.x},${d.y})`)
-                .style("cursor", "grab")
-                .call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded))
-                .on("click", selectTask);
-
-            taskPoints
-                .append("circle")
-                .attr("r", 10)
-                .attr("class", "task-point")
-                .attr("fill", (d) => d.color)
-                .attr("aria-label", (d) => `Task ${d.label}`);
-
-            taskPoints
-                .append("text")
-                .attr("class", "task-label")
-                .attr("x", 15)
-                .attr("y", 5)
-                .text((d) => d.label);
-
             let selectedTask = null;
-            let selectedTaskElement = null;
+            let completedTasksPoint;
 
+            // Initialize the hill chart
+            function initHillChart() {
+                const hillPoints = d3.range(xMin, xMax).map((x) => ({ x, y: hillFn(x) }));
+
+                svg.append("path")
+                    .datum(hillPoints)
+                    .attr("class", "hill-path")
+                    .attr(
+                        "d",
+                        d3
+                            .line()
+                            .curve(d3.curveBasis)
+                            .x((d) => d.x)
+                            .y((d) => d.y),
+                    );
+
+                svg.append("line")
+                    .attr("x1", 400)
+                    .attr("x2", 400)
+                    .attr("y1", 100)
+                    .attr("y2", 350)
+                    .attr("stroke", "gray")
+                    .attr("stroke-dasharray", "5,5");
+
+                const labels = [
+                    { x: 200, text: "FIGURING THINGS OUT" },
+                    { x: 600, text: "MAKING IT HAPPEN" },
+                ];
+
+                labels.forEach(({ x, text }) => {
+                    svg.append("text")
+                        .attr("x", x)
+                        .attr("y", 350)
+                        .attr("text-anchor", "middle")
+                        .attr("font-size", 12)
+                        .text(text);
+                });
+            }
+
+            // Function to load tasks from localStorage
+            function loadTasks() {
+                const tasksJson = localStorage.getItem("tasks");
+                if (tasksJson) {
+                    tasks = JSON.parse(tasksJson).map((d) => ({ ...d, y: hillFn(d.x) }));
+                }
+            }
+
+            // Function to save tasks to localStorage
+            function saveTasks() {
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+            }
+
+            // Render all task points on the chart
+            function renderTasksOnChart() {
+                const taskPoints = svg.selectAll(".task").data(
+                    tasks.filter((d) => !d.completed),
+                    (d) => d.id,
+                );
+
+                const taskGroup = taskPoints
+                    .enter()
+                    .append("g")
+                    .attr("class", "task")
+                    .attr("transform", (d) => `translate(${d.x},${d.y})`)
+                    .style("cursor", "grab")
+                    .call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded));
+
+                taskGroup
+                    .append("circle")
+                    .attr("r", 10)
+                    .attr("class", "task-point")
+                    .attr("fill", (d) => d.color);
+
+                taskGroup
+                    .append("text")
+                    .attr("class", "task-label")
+                    .attr("x", 15)
+                    .attr("y", 5)
+                    .text((d) => d.label);
+
+                taskPoints.exit().remove();
+            }
+
+            // Render task list in the DOM
+            function renderTaskList() {
+                const taskList = document.getElementById("taskList");
+                taskList.innerHTML = ""; // Clear existing tasks
+
+                // Sort tasks to place completed tasks at the bottom
+                const sortedTasks = tasks.slice().sort((a, b) => a.completed - b.completed);
+
+                sortedTasks.forEach((task) => {
+                    const taskItem = createTaskListItem(task);
+                    taskList.appendChild(taskItem);
+                });
+
+                renderCompletedTasksPoint();
+            }
+
+            // Create a single task list item
+            function createTaskListItem(task) {
+                const taskItem = document.createElement("li");
+                taskItem.innerHTML = `
+                    <div class="flex items-center justify-between space-x-3 px-2 hover:bg-gray-200 active:bg-gray-200 transition-all rounded ${task.completed ? "opacity-50" : ""}">
+                        <div class="flex items-center space-x-2 flex-1">
+                            <i class="task-status-icon hover:cursor-pointer fa-regular ${task.completed ? "fa-check-square text-green-500" : "fa-square text-blue-500"}" data-task-id="${task.id}"></i>
+                            <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1 ${task.completed ? "line-through" : ""}" type="text" value="${task.label}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
+                            <span class="color-indicator hidden print:inline-block text-xl" style="color: ${task.color};"><i class="fa-solid fa-circle"></i></span>
+                        </div>
+                        <input class="task-color-input w-8 h-8 ml-2 bg-transparent print:hidden" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
+                        <button class="removeTask p-2 ml-2 text-red-300 hover:text-red-500 transition print:hidden">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+
+                addTaskItemEventListeners(taskItem, task);
+                return taskItem;
+            }
+
+            // Add event listeners to a task list item
+            function addTaskItemEventListeners(taskItem, task) {
+                taskItem.querySelector(".task-label-input").addEventListener("change", (event) => {
+                    task.label = event.target.value;
+                    saveTasks();
+                    updateTaskDisplay(task);
+                });
+
+                taskItem.querySelector(".task-color-input").addEventListener("input", (event) => {
+                    task.color = event.target.value;
+                    saveTasks();
+                    updateTaskDisplay(task);
+                });
+
+                taskItem.querySelector(".task-status-icon").addEventListener("click", () => {
+                    toggleTaskCompletion(task.id);
+                    saveTasks();
+                    renderTaskList();
+                });
+
+                taskItem.querySelector(".removeTask").addEventListener("click", () => {
+                    removeTask(task.id);
+                    saveTasks();
+                    renderTaskList();
+                });
+
+                // Task highlight on hover
+                // taskItem.addEventListener("mouseover", () => highlightTaskOnChart(task.id));
+                // taskItem.addEventListener("mouseout", resetTaskHighlightsOnChart);
+
+                // Task highlight on edit
+                taskItem
+                    .querySelector(".task-label-input")
+                    .addEventListener("focus", () => highlightTaskOnChart(task.id));
+
+                taskItem
+                    .querySelector(".task-color-input")
+                    .addEventListener("focus", () => highlightTaskOnChart(task.id));
+
+                // Un-highlight when finished editing
+                taskItem.querySelector(".task-label-input").addEventListener("blur", resetTaskHighlightsOnChart);
+                taskItem.querySelector(".task-color-input").addEventListener("blur", resetTaskHighlightsOnChart);
+            }
+
+            // Update the task display on the chart
+            function updateTaskDisplay(task) {
+                const taskElement = svg.selectAll(".task").filter((d) => d.id === task.id);
+                taskElement.select("text").text((d) => d.label);
+                taskElement.select("circle").attr("fill", (d) => d.color);
+            }
+
+            // Handle task dragging
             function dragStarted(event, d) {
                 d3.select(this).select("circle").attr("cursor", "grabbing");
             }
@@ -163,27 +280,64 @@
 
             function dragEnded(event, d) {
                 d3.select(this).select("circle").attr("cursor", "grab");
+                saveTasks();
             }
 
-            function selectTask(event, d) {
-                selectedTask = d;
-                selectedTaskElement = d3.select(this);
-                d3.select("#taskLabel").property("value", d.label);
-                d3.select("#taskColor").property("value", d.color);
+            // Highlight task on chart
+            function highlightTaskOnChart(taskId) {
+                svg.selectAll(".task").style("opacity", (d) => (d.id === taskId ? 1 : 0.5));
+                svg.selectAll(".task")
+                    .filter((d) => d.id === taskId)
+                    .select("circle")
+                    .attr("r", 12)
+                    .attr("stroke", "#FF0000")
+                    .attr("stroke-width", 3);
             }
 
-            function updateTaskDisplay(task) {
-                task.select("text").text((d) => d.label);
-                task.select("circle").attr("fill", (d) => d.color);
+            // Reset task highlights on chart
+            function resetTaskHighlightsOnChart() {
+                svg.selectAll(".task")
+                    .style("opacity", 1)
+                    .select("circle")
+                    .attr("r", 10)
+                    .attr("stroke", null)
+                    .attr("stroke-width", 0);
             }
 
-            let completedTasksPoint;
+            // Toggle task completion
+            function toggleTaskCompletion(taskId) {
+                const task = tasks.find((t) => t.id === taskId);
+                task.completed = !task.completed;
+                saveTasks();
+                if (task.completed) {
+                    svg.selectAll(".task")
+                        .filter((d) => d.id === taskId)
+                        .remove();
+                } else {
+                    renderTasksOnChart();
+                }
+            }
 
+            // Remove a task
+            function removeTask(taskId) {
+                tasks = tasks.filter((t) => t.id !== taskId);
+                saveTasks();
+                svg.selectAll(".task")
+                    .filter((d) => d.id === taskId)
+                    .remove();
+            }
+
+            // Render completed tasks point
             function renderCompletedTasksPoint() {
                 const completedCount = tasks.filter((task) => task.completed).length;
                 if (completedTasksPoint) {
                     completedTasksPoint.remove();
                 }
+
+                if (completedCount === 0) {
+                    return;
+                }
+
                 completedTasksPoint = svg.append("g").attr("transform", `translate(${xMax}, ${hillFn(xMax)})`);
 
                 completedTasksPoint.append("circle").attr("r", 15).attr("fill", "#c2c2c2");
@@ -195,220 +349,32 @@
                     .attr("y", 5)
                     .attr("text-anchor", "middle")
                     .attr("font-weight", "bold")
-                    .style("pointer-events", "none")
                     .text(completedCount);
             }
 
-            // Render the task list and set event listeners for input changes
-            function renderTaskList() {
-                const taskList = document.getElementById("taskList");
-                taskList.innerHTML = ""; // Clear existing tasks
-                const incompleteTasks = tasks.filter((task) => !task.completed);
-                const completedTasks = tasks.filter((task) => task.completed);
-
-                // Function to render tasks
-                const renderTasks = (taskItems) => {
-                    taskItems.forEach((task) => {
-                        const taskItem = document.createElement("li");
-                        taskItem.innerHTML = `
-                            <div class="flex items-center justify-between space-x-3 px-2 hover:bg-gray-200 active:bg-gray-200 transition-all rounded ${task.completed ? "opacity-50" : ""}">
-                                <div class="flex items-center space-x-2 flex-1">
-                                    <i class="task-status-icon fa-regular ${task.completed ? "fa-check-square text-green-500" : "fa-square text-blue-500"}" data-task-id="${task.id}"></i>
-                                    <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1 ${task.completed ? "line-through" : ""}" type="text" value="${task.label}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
-                                </div>
-                                <input class="task-color-input w-8 h-8 ml-2" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
-                                <button class="removeTask p-2 ml-2 text-red-300 hover:text-red-500 transition">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-
-                        taskList.appendChild(taskItem);
-
-                        // Common highlight logic
-                        const highlightTaskPoint = (taskId) => {
-                            svg.selectAll(".task").style("opacity", (d) => (d.id === taskId ? 1 : 0.5)); // Dim others
-                            svg.selectAll(".task")
-                                .filter((d) => d.id === taskId)
-                                .raise() // Bring to front
-                                .select("circle")
-                                .attr("r", 12)
-                                .attr("stroke", "#FF0000")
-                                .attr("stroke-width", 3);
-                        };
-
-                        const resetTaskPoints = () => {
-                            svg.selectAll(".task")
-                                .style("opacity", 1) // Reset opacity
-                                .select("circle")
-                                .attr("r", 10)
-                                .attr("stroke", null)
-                                .attr("stroke-width", 0);
-                        };
-
-                        taskItem.addEventListener("mouseover", () => highlightTaskPoint(task.id));
-                        taskItem.addEventListener("mouseout", resetTaskPoints);
-
-                        // Handle label changes and highlight
-                        taskItem.querySelector(".task-label-input").addEventListener("change", (event) => {
-                            const newLabel = event.target.value;
-                            const correspondingTask = tasks.find((t) => t.id === task.id);
-                            correspondingTask.label = newLabel;
-                            updateTaskDisplay(svg.selectAll(".task").filter((d) => d.id === task.id));
-                            highlightTaskPoint(task.id);
-                        });
-
-                        // Handle color changes and highlight
-                        taskItem.querySelector(".task-color-input").addEventListener("input", (event) => {
-                            const newColor = event.target.value;
-                            const correspondingTask = tasks.find((t) => t.id === task.id);
-                            correspondingTask.color = newColor;
-                            updateTaskDisplay(svg.selectAll(".task").filter((d) => d.id === task.id));
-                            highlightTaskPoint(task.id);
-                        });
-
-                        // Handle completion toggle
-                        taskItem.querySelector(".task-status-icon").addEventListener("click", () => {
-                            toggleTaskCompletion(task.id);
-                            renderTaskList();
-                            renderCompletedTasksPoint();
-                        });
-
-                        // Handle removal
-                        taskItem.querySelector(".removeTask").addEventListener("click", () => {
-                            removeTask(task.id);
-                            renderTaskList();
-                            renderCompletedTasksPoint();
-                        });
-                    });
+            // Add a new task
+            function addNewTask() {
+                const newId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
+                const newTask = {
+                    id: newId,
+                    label: `Task ${newId}`,
+                    x: 400,
+                    color: colorPalette[(newId - 1) % colorPalette.length],
+                    y: hillFn(400),
+                    completed: false,
                 };
-
-                // Render incomplete tasks
-                renderTasks(incompleteTasks);
-
-                // Render completed tasks
-                renderTasks(completedTasks);
-
-                // Remove completed tasks from the hill chart
-                svg.selectAll(".task")
-                    .data(
-                        tasks.filter((t) => !t.completed),
-                        (d) => d.id,
-                    )
-                    .exit()
-                    .remove();
-
-                // Listen for label changes
-                taskList.querySelectorAll("input[type='text']").forEach((input) =>
-                    input.addEventListener("change", (event) => {
-                        const taskId = parseInt(event.target.dataset.taskId);
-                        const correspondingTask = tasks.find((t) => t.id === taskId);
-                        correspondingTask.label = event.target.value;
-                        updateTaskDisplay(svg.selectAll(".task").filter((d) => d.id === taskId));
-                    }),
-                );
-
-                // Listen for color changes
-                taskList.querySelectorAll("input[type='color']").forEach((input) =>
-                    input.addEventListener("input", (event) => {
-                        const taskId = parseInt(event.target.dataset.taskId);
-                        const correspondingTask = tasks.find((t) => t.id === taskId);
-                        correspondingTask.color = event.target.value;
-                        updateTaskDisplay(svg.selectAll(".task").filter((d) => d.id === taskId));
-                    }),
-                );
-
-                // Task removal function
-                function removeTask(taskId) {
-                    tasks = tasks.filter((t) => t.id !== taskId);
-                    svg.selectAll(".task")
-                        .filter((d) => d.id === taskId)
-                        .remove();
-                }
-
-                // Toggle task completion
-                function toggleTaskCompletion(taskId) {
-                    const task = tasks.find((t) => t.id === taskId);
-                    task.completed = !task.completed;
-                    if (task.completed) {
-                        svg.selectAll(".task")
-                            .filter((d) => d.id === taskId)
-                            .remove();
-                    } else {
-                        // Re-add the task to the chart if incompleted
-                        const newTaskPoint = svg
-                            .append("g")
-                            .datum(task)
-                            .attr("class", "task")
-                            .attr("transform", (d) => `translate(${d.x},${d.y})`)
-                            .style("cursor", "grab")
-                            .call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded));
-
-                        newTaskPoint
-                            .append("circle")
-                            .attr("r", 10)
-                            .attr("class", "task-point")
-                            .attr("fill", (d) => d.color)
-                            .attr("aria-label", (d) => `Task ${d.label}`);
-
-                        newTaskPoint
-                            .append("text")
-                            .attr("class", "task-label")
-                            .attr("x", 15)
-                            .attr("y", 5)
-                            .text((d) => d.label);
-                    }
-                }
+                tasks.push(newTask);
+                saveTasks();
+                renderTasksOnChart();
+                renderTaskList();
             }
 
-            // Initialize task creation
-            const colorPalette = ["#3498db", "#e74c3c", "#2ecc71", "#9b59b6", "#f1c40f"];
-
-            document.getElementById("addTask").addEventListener("click", () => {
-                const newId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-
-                // Calculate color index based on the current task count
-                const colorIndex = (newId - 1) % colorPalette.length;
-                const newColor = colorPalette[colorIndex];
-
-                const newTask = { id: newId, label: `Task ${newId}`, x: 400, color: newColor, y: hillFn(400) };
-                tasks.push(newTask);
-
-                const newTaskPoint = svg
-                    .append("g")
-                    .datum(newTask)
-                    .attr("class", "task")
-                    .attr("transform", (d) => `translate(${d.x},${d.y})`)
-                    .style("cursor", "grab")
-                    .call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded));
-
-                newTaskPoint
-                    .append("circle")
-                    .attr("r", 10)
-                    .attr("class", "task-point")
-                    .attr("fill", (d) => d.color)
-                    .attr("aria-label", (d) => `Task ${d.label}`);
-
-                newTaskPoint
-                    .append("text")
-                    .attr("class", "task-label")
-                    .attr("x", 15)
-                    .attr("y", 5)
-                    .text((d) => d.label);
-
-                renderTaskList();
-            });
-
-            renderTaskList();
-        </script>
-        <script>
-            document.getElementById("exportPNG").addEventListener("click", svgToCanvasAndDownload);
-
-            // Optional: Export to PNG
-            function svgToCanvasAndDownload() {
-                const svg = document.getElementById("chart");
+            // Export chart as PNG
+            function exportChartAsPNG() {
+                const svgNode = document.getElementById("chart");
                 const serializer = new XMLSerializer();
-                const source = serializer.serializeToString(svg);
+                const svgString = serializer.serializeToString(svgNode);
+                const image = new Image();
 
                 // Include styles for correct rendering
                 const style = `
@@ -418,31 +384,28 @@
                             stroke: black; /* Stroke color */
                             stroke-width: 2; /* Stroke width */
                         }
+                        text {
+                            font-family: sans-serif;
+                            font-size: 12px;
+                        }
                     </style>
                 `;
 
                 // Insert styles directly into the SVG source
-                const svgWithStyles = source.replace(/<\/svg>/, `${style}</svg>`);
+                const svgWithStyles = svgString.replace(/<\/svg>/, `${style}</svg>`);
 
-                const image = new Image();
                 image.src = "data:image/svg+xml;base64," + window.btoa(unescape(encodeURIComponent(svgWithStyles)));
-
                 image.onload = function () {
                     const canvas = document.createElement("canvas");
-                    const scaleFactor = 2; // Increase size by a factor of 2
-                    canvas.width = svg.clientWidth * scaleFactor;
-                    canvas.height = svg.clientHeight * scaleFactor;
+                    const scaleFactor = 4;
+                    canvas.width = svgNode.clientWidth * scaleFactor;
+                    canvas.height = svgNode.clientHeight * scaleFactor;
 
                     const context = canvas.getContext("2d");
-
-                    // Fill background with white
                     context.fillStyle = "white";
                     context.fillRect(0, 0, canvas.width, canvas.height);
-
-                    // Scale the context to fit the larger canvas
-                    context.scale(scaleFactor, scaleFactor);
-
-                    // Draw the image on the canvas
+                    context.imageSmoothingEnabled = true; // Enable image smoothing
+                    context.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0); // Use setTransform for scaling
                     context.drawImage(image, 0, 0);
 
                     const png = canvas.toDataURL("image/png");
@@ -454,6 +417,20 @@
                     document.body.removeChild(a);
                 };
             }
+
+            // Event Listeners
+            document.getElementById("addTask").addEventListener("click", addNewTask);
+            document.getElementById("exportPNG").addEventListener("click", exportChartAsPNG);
+
+            // Initial rendering
+            initHillChart();
+
+            // Load tasks when the page loads
+            document.addEventListener("DOMContentLoaded", () => {
+                loadTasks();
+                renderTasksOnChart();
+                renderTaskList();
+            });
         </script>
     </body>
 </html>
