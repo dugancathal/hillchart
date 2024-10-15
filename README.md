@@ -10,7 +10,7 @@ The Hill Chart Application is an interactive tool for visualizing task progress 
 - **Task Management**: Add, edit, and remove tasks with ease.
 - **Status Tracking**: Mark tasks as completed and see them move off the main chart.
 - **Data Persistence**: Save tasks in the browser's local storage to preserve state across sessions.
-- **PNG Export**: Export the current chart view as a PNG image for sharing or printing.
+- **PNG Export and Print**: Export the chart as a PNG image or print a complete [PDF](https://github.com/user-attachments/files/17378107/Hill.Chart.pdf).
 
 ## Usage Instructions
 
@@ -35,3 +35,4 @@ The Hill Chart Application is an interactive tool for visualizing task progress 
 
 1. **Export to PNG**: Click the blue "Export PNG" button to download the current view of the hill chart as a PNG image file.
 2. **Print the Page**: Use your browser's print functionality to print the page. Note that certain interactive elements are hidden in print view for a cleaner result.
+
