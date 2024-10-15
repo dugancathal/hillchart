@@ -3,15 +3,11 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="An interactive hill chart with draggable tasks." />
         <title>Hill Chart</title>
-        <script src="https://d3js.org/d3.v7.min.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
         <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-            }
-
             .task {
                 cursor: pointer;
                 font-size: 12px;
@@ -31,99 +27,105 @@
                 stroke-width: 2;
                 fill: none;
             }
-
-            .form-container {
-                margin-top: 20px;
-            }
         </style>
     </head>
-    <body>
-        <h1>Hill Chart</h1>
-        <svg id="chart" width="800" height="400"></svg>
 
-        <div class="form-container">
-            <h3>Edit Task</h3>
-            <div class="fourth">
-                <input class="stack" type="text" id="taskLabel" />
-                <input class="stack" type="color" id="taskColor" />
-                <button id="updateTask" class="stack">Update Task</button>
+    <body class="font-sans m-5 bg-gray-100 min-h-screen flex flex-col items-center">
+        <h1 class="text-3xl font-bold mb-8">Hill Chart</h1>
+
+        <svg
+            id="chart"
+            width="800"
+            height="400"
+            class="bg-white shadow-md rounded-lg"
+            role="img"
+            aria-labelledby="chart-title chart-desc"
+        >
+            <title id="chart-title">Hill Chart</title>
+            <desc id="chart-desc">A dynamic hill chart with draggable tasks</desc>
+        </svg>
+
+        <section
+            class="form-container mt-10 bg-white p-6 rounded-lg shadow-md w-full max-w-md"
+            aria-labelledby="form-title"
+        >
+            <h3 id="form-title" class="text-xl font-semibold mb-4">Edit Task</h3>
+
+            <div class="grid grid-cols-1 space-y-4">
+                <label for="taskLabel" class="block text-sm font-medium text-gray-700">Task Label</label>
+                <input
+                    class="p-2 border rounded"
+                    type="text"
+                    id="taskLabel"
+                    placeholder="Task Label"
+                    aria-required="true"
+                />
+
+                <label for="taskColor" class="block text-sm font-medium text-gray-700">Task Color</label>
+                <input
+                    class="appearance-none border-none w-full h-10 cursor-pointer"
+                    type="color"
+                    id="taskColor"
+                    aria-required="true"
+                />
+
+                <button
+                    id="updateTask"
+                    aria-label="Update Task Label and Color"
+                    class="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                >
+                    Update Task
+                </button>
             </div>
-        </div>
+        </section>
 
         <script>
-            // Set up dimensions and SVG canvas
             const width = 800,
                 height = 400;
-            const svg = d3.select("#chart");
 
-            const hillFn = (point) =>
-                150 * Math.sin((Math.PI / 400) * (point + 200)) + 200;
+            const svg = d3.select("#chart").attr("width", width).attr("height", height);
 
-            // Generate main hill curve points
-            const hillPoints = d3.range(50, 750, 1).map((x) => ({
-                x: x,
-                y: hillFn(x),
-            }));
-
-            // Create the hill path
-            const hillPathGenerator = d3
-                .line()
-                .x((d) => d.x)
-                .y((d) => d.y)
-                .curve(d3.curveBasis);
+            const hillFn = (x) => 150 * Math.sin((Math.PI * (x + 200)) / 400) + 200;
+            const hillPoints = d3.range(50, 750).map((x) => ({ x, y: hillFn(x) }));
 
             svg.append("path")
-                .attr("d", hillPathGenerator(hillPoints))
-                .attr("class", "hill-path");
+                .datum(hillPoints)
+                .attr("class", "hill-path")
+                .attr(
+                    "d",
+                    d3
+                        .line()
+                        .x((d) => d.x)
+                        .y((d) => d.y)
+                        .curve(d3.curveBasis),
+                );
 
-            // Dashed vertical line at the peak
             svg.append("line")
                 .attr("x1", 400)
-                .attr("y1", 50)
                 .attr("x2", 400)
-                .attr("y2", 350)
+                .attr("y1", 100)
+                .attr("y2", 300)
                 .attr("stroke", "gray")
                 .attr("stroke-dasharray", "5,5");
 
-            // Text labels
-            svg.append("text")
-                .attr("x", 200)
-                .attr("y", 350)
-                .attr("text-anchor", "middle")
-                .text("FIGURING THINGS OUT");
-
-            svg.append("text")
-                .attr("x", 600)
-                .attr("y", 350)
-                .attr("text-anchor", "middle")
-                .text("MAKING IT HAPPEN");
-
-            // Task list data (initial positions, labels, and colors)
-            let tasks = [
-                {
-                    id: 1,
-                    label: "Task 1",
-                    x: 150,
-                    y: hillFn(150),
-                    color: "#1f77b4",
-                },
-                {
-                    id: 2,
-                    label: "Task 2",
-                    x: 350,
-                    y: hillFn(350),
-                    color: "#ff7f0e",
-                },
-                {
-                    id: 3,
-                    label: "Task 3",
-                    x: 600,
-                    y: hillFn(600),
-                    color: "#2ca02c",
-                },
+            const labels = [
+                { x: 200, text: "FIGURING THINGS OUT" },
+                { x: 600, text: "MAKING IT HAPPEN" },
             ];
 
-            // Create draggable task points
+            labels.forEach(({ x, text }) => {
+                svg.append("text").attr("x", x).attr("y", 350).attr("text-anchor", "middle").text(text);
+            });
+
+            let tasks = [
+                { id: 1, label: "Task 1", x: 150, color: "#1f77b4" },
+                { id: 2, label: "Task 2", x: 350, color: "#ff7f0e" },
+                { id: 3, label: "Task 3", x: 600, color: "#2ca02c" },
+            ].map((d) => ({ ...d, y: hillFn(d.x) }));
+
+            const xMin = 50,
+                xMax = 750;
+
             const taskPoints = svg
                 .selectAll(".task")
                 .data(tasks)
@@ -131,22 +133,17 @@
                 .append("g")
                 .attr("class", "task")
                 .attr("transform", (d) => `translate(${d.x},${d.y})`)
-                .call(
-                    d3
-                        .drag()
-                        .on("start", dragStarted)
-                        .on("drag", dragged)
-                        .on("end", dragEnded),
-                );
+                .style("cursor", "grab")
+                .call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded))
+                .on("click", selectTask);
 
-            // Add circles for task points
             taskPoints
                 .append("circle")
                 .attr("r", 10)
                 .attr("class", "task-point")
-                .attr("fill", (d) => d.color);
+                .attr("fill", (d) => d.color)
+                .attr("aria-label", (d) => `Task ${d.label}`);
 
-            // Add text labels for each task
             taskPoints
                 .append("text")
                 .attr("class", "task-label")
@@ -154,14 +151,16 @@
                 .attr("y", 5)
                 .text((d) => d.label);
 
-            // Drag event handlers
+            let selectedTask = null;
+            let selectedTaskElement = null;
+
             function dragStarted(event, d) {
                 d3.select(this).select("circle").attr("cursor", "grabbing");
             }
 
             function dragged(event, d) {
-                d.x = Math.max(50, Math.min(750, event.x)); // Constrain x to hill range
-                d.y = hillFn(d.x); // Get y based on x using hillFn
+                d.x = Math.max(xMin, Math.min(xMax, event.x));
+                d.y = hillFn(d.x);
                 d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
             }
 
@@ -169,40 +168,26 @@
                 d3.select(this).select("circle").attr("cursor", "grab");
             }
 
-            // Edit task functionality
-            let selectedTask = null;
-            taskPoints.on("click", function (event, d) {
+            function selectTask(event, d) {
                 selectedTask = d;
-                document.getElementById("taskLabel").value = d.label;
-                document.getElementById("taskColor").value = d.color;
+                selectedTaskElement = d3.select(this);
+                d3.select("#taskLabel").property("value", d.label);
+                d3.select("#taskColor").property("value", d.color);
+            }
+
+            function updateTaskDisplay(task) {
+                task.select("text").text((d) => d.label);
+                task.select("circle").attr("fill", (d) => d.color);
+            }
+
+            const updateTaskButton = document.getElementById("updateTask");
+            updateTaskButton.addEventListener("click", () => {
+                if (selectedTask && selectedTaskElement) {
+                    selectedTask.label = d3.select("#taskLabel").property("value");
+                    selectedTask.color = d3.select("#taskColor").property("value");
+                    updateTaskDisplay(selectedTaskElement);
+                }
             });
-
-            // Update task based on form input
-            // Ensure task color and label update properly
-            document
-                .getElementById("updateTask")
-                .addEventListener("click", () => {
-                    if (selectedTask) {
-                        const newLabel =
-                            document.getElementById("taskLabel").value;
-                        const newColor =
-                            document.getElementById("taskColor").value;
-
-                        selectedTask.label = newLabel;
-                        selectedTask.color = newColor;
-
-                        // Update the selected task's label and color on the chart
-                        taskPoints
-                            .filter((d) => d.id === selectedTask.id)
-                            .select("text")
-                            .text((d) => d.label);
-
-                        taskPoints
-                            .filter((d) => d.id === selectedTask.id)
-                            .select("circle")
-                            .attr("fill", (d) => d.color);
-                    }
-                });
         </script>
     </body>
 </html>
