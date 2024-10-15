@@ -1,5 +1,7 @@
 # HillChart
 
+![Hill Chart · 2 25pm · 10-15](https://github.com/user-attachments/assets/d14622fe-880a-4863-b01e-ec0b9f6a2c51)
+
 The Hill Chart Application is an interactive tool for visualizing task progress using a metaphorical hill chart. It allows users to add, manage, and track tasks in a dynamic and visually intuitive way.
 
 ## Features
