@@ -1,4 +1,4 @@
-# HillChart
+# Hill Chart
 
 ![Hill Chart · 2 25pm · 10-15](https://github.com/user-attachments/assets/d14622fe-880a-4863-b01e-ec0b9f6a2c51)
 
