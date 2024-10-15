@@ -205,7 +205,7 @@
                             <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1 ${task.completed ? "line-through" : ""}" type="text" value="${task.label}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
                             <span class="color-indicator hidden print:inline-block text-xl" style="color: ${task.color};"><i class="fa-solid fa-circle"></i></span>
                         </div>
-                        <input class="task-color-input w-8 h-8 ml-2 bg-transparent print:hidden" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
+                        <input class="task-color-input w-8 h-8 ml-2 bg-transparent print:hidden" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled hidden" : ""}/>
                         <button class="removeTask p-2 ml-2 text-red-300 hover:text-red-500 transition print:hidden">
                             <i class="fa-solid fa-trash"></i>
                         </button>
