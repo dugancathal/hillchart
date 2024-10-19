@@ -293,23 +293,6 @@
                     saveTasks();
                     renderTaskList();
                 });
-
-                // Task highlight on hover
-                // taskItem.addEventListener("mouseover", () => highlightTaskOnChart(task.id));
-                // taskItem.addEventListener("mouseout", resetTaskHighlightsOnChart);
-
-                // Task highlight on edit
-                taskItem
-                    .querySelector(".task-label-input")
-                    .addEventListener("focus", () => highlightTaskOnChart(task.id));
-
-                taskItem
-                    .querySelector(".task-color-input")
-                    .addEventListener("focus", () => highlightTaskOnChart(task.id));
-
-                // Un-highlight when finished editing
-                taskItem.querySelector(".task-label-input").addEventListener("blur", resetTaskHighlightsOnChart);
-                taskItem.querySelector(".task-color-input").addEventListener("blur", resetTaskHighlightsOnChart);
             }
 
             // Update the task display on the chart
@@ -339,27 +322,6 @@
                     toggleTaskCompletion(d.id);
                 }
                 saveTasks();
-            }
-
-            // Highlight task on chart
-            function highlightTaskOnChart(taskId) {
-                svg.selectAll(".task").style("opacity", (d) => (d.id === taskId ? 1 : 0.5));
-                svg.selectAll(".task")
-                    .filter((d) => d.id === taskId)
-                    .select("circle")
-                    .attr("r", 12)
-                    .attr("stroke", "#FF0000")
-                    .attr("stroke-width", 3);
-            }
-
-            // Reset task highlights on chart
-            function resetTaskHighlightsOnChart() {
-                svg.selectAll(".task")
-                    .style("opacity", 1)
-                    .select("circle")
-                    .attr("r", 10)
-                    .attr("stroke", null)
-                    .attr("stroke-width", 0);
             }
 
             // Toggle task completion
