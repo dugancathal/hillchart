@@ -39,27 +39,26 @@
 
     <body class="font-sans m-2 bg-gray-100 min-h-screen flex flex-col items-center print:bg-transparent">
         <!-- Navbar -->
-        <nav class="w-full p-4 flex justify-between items-center">
+        <nav class="w-full p-4 flex flex-col md:flex-row print:flex-row justify-between items-center">
             <input
                 id="chartTitle"
-                class="bg-transparent focus:outline-none text-3xl font-bold"
+                class="bg-transparent focus:outline-none text-2xl md:text-3xl font-bold mb-4 md:mb-0 text-center md:text-left"
                 type="text"
                 placeholder="Hill Chart"
             />
-            <!-- Buttons on right side -->
             <div class="flex space-x-2">
                 <!-- Print button -->
-                <button id="print" class="py-1 px-2 rounded hover:text-blue-600 transition print:hidden">
+                <button id="print" class="py-1 px-2 rounded hover:text-blue-600 print:hidden">
                     <i class="fa-solid fa-print"></i>
                     Print Page
                 </button>
                 <!-- Export PNG button -->
-                <button id="exportPNG" class="py-1 px-2 rounded hover:text-blue-600 transition print:hidden">
+                <button id="exportPNG" class="py-1 px-2 rounded hover:text-blue-600 print:hidden">
                     <i class="fa-solid fa-file-arrow-down"></i>
                     Export PNG
                 </button>
                 <!-- Clear tasks button -->
-                <button id="deleteAll" class="py-1 px-2 rounded hover:text-red-600 transition print:hidden">
+                <button id="deleteAll" class="py-1 px-2 rounded hover:text-red-600 print:hidden">
                     <i class="fa-solid fa-circle-exclamation"></i>
                     Reset Chart
                 </button>
@@ -86,10 +85,7 @@
                 <!-- Dynamic task items will be inserted here -->
             </ul>
         </section>
-        <button
-            id="addTask"
-            class="py-1 px-8 mt-4 bg-green-500 text-white rounded hover:bg-green-600 transition print:hidden"
-        >
+        <button id="addTask" class="py-1 px-8 mt-4 bg-green-500 text-white rounded hover:bg-green-600 print:hidden">
             <i class="fa-regular fa-square-plus"></i>
         </button>
 
@@ -251,14 +247,16 @@
             function createTaskListItem(task) {
                 const taskItem = document.createElement("li");
                 taskItem.innerHTML = `
-                    <div class="flex items-center justify-between space-x-3 px-2 hover:bg-gray-200 active:bg-gray-200 transition-all rounded ${task.completed ? "opacity-50" : ""}">
-                        <div class="flex items-center space-x-2 flex-1">
-                            <i class="task-status-icon hover:cursor-pointer fa-regular ${task.completed ? "fa-check-square text-green-500" : "fa-square text-blue-500"}" data-task-id="${task.id}"></i>
-                            <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1 ${task.completed ? "line-through" : ""}" type="text" value="${task.label}" data-task-id="${task.id}" maxlength=${maxTaskTextLength} ${task.completed ? "disabled" : ""}/>
-                            <span class="color-indicator bg-transparent text-xl hidden print:${task.completed ? "hidden" : "block"} " style="color: ${task.color};"><i class="fa-solid fa-circle"></i></span>
+                    <div class="flex items-center justify-between px-2 hover:bg-gray-200 active:bg-gray-200}">
+                        <div class="flex items-center flex-1">
+                            <i class="task-status-icon hover:cursor-pointer fa-regular mr-2 ${task.completed ? "fa-check-square text-green-500" : "fa-square text-blue-500"}" data-task-id="${task.id}"></i>
+                            <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1 ${task.completed ? "line-through text-gray-300" : ""}" type="text" value="${task.label}" data-task-id="${task.id}" maxlength=${maxTaskTextLength} ${task.completed ? "disabled" : ""}/>
                         </div>
-                        <input class="task-color-input w-8 h-8 ml-2 bg-transparent print:hidden" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled hidden" : ""}/>
-                        <button class="removeTask p-2 ml-2 text-red-300 hover:text-red-500 transition print:hidden">
+                        <label class="color-indicator bg-transparent text-xl ${task.completed ? "hidden" : "block"} " style="color: ${task.color};">
+                          <input class="task-color-input hidden" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
+                          <i class="fa-solid fa-circle"></i>
+                        </label>
+                        <button class="removeTask p-2 ml-2 text-red-300 hover:text-red-500 print:hidden">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -317,7 +315,7 @@
                 d3.select(this).select("circle").attr("cursor", "grab");
                 // If task is dragged to the end (+/- 5), mark it as completed
                 if (d.x >= xMax - 5) {
-                    d.x = (xMax + xMin) / 2;
+                    d.x = xMax - 20;
                     d.y = hillFn(d.x);
                     toggleTaskCompletion(d.id);
                 }
