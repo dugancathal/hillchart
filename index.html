@@ -123,9 +123,9 @@
 
             const svg = d3.select("#chart").attr("width", width).attr("height", height);
             let demoTasks = [
-                { id: 1, label: "Task 1", x: xMin + 50, color: "#1f77b4", completed: false },
-                { id: 2, label: "Task 2", x: xMid - xMid / 2, color: "#ff7f0e", completed: false },
-                { id: 3, label: "Task 3", x: xMid + (xMin - 40), color: "#2ca02c", completed: false },
+                { id: 1, label: "Feature A", x: xMin + 50, color: "#1f77b4", completed: false },
+                { id: 2, label: "Feature B", x: xMid - xMid / 2, color: "#ff7f0e", completed: false },
+                { id: 3, label: "Feature C", x: xMid - xMid / 3, color: "#2ca02c", completed: false },
             ].map((d) => ({ ...d, y: hillFn(d.x) }));
             let tasks = [...demoTasks];
 
@@ -161,8 +161,8 @@
                     .attr("stroke-dasharray", "5,5");
 
                 const labels = [
-                    { x: xMid - xMid / 2, text: "FIGURING THINGS OUT" },
-                    { x: xMid + xMid / 2, text: "MAKING IT HAPPEN" },
+                    { x: xMid - xMid / 2, text: "RESEARCHING" },
+                    { x: xMid + xMid / 2, text: "DEVELOPING" },
                 ];
 
                 labels.forEach(({ x, text }) => {
