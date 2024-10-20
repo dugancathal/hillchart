@@ -179,7 +179,7 @@
             function loadTasks() {
                 const tasksJson = localStorage.getItem("tasks");
                 if (tasksJson) {
-                    tasks = JSON.parse(tasksJson).map((d) => ({ ...d, y: hillFn(d.x) }));
+                    tasks = JSON.parse(tasksJson);
                 }
             }
 
@@ -241,12 +241,10 @@
                 taskGroup
                     .append("text")
                     .attr("class", "task-label")
-                    .attr("x", 0)
-                    .attr("y", height / 12)
-                    .attr("text-anchor", "middle")
-                    .attr("visibility", "hidden")
+                    .attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)) // Adjust x position based on the point's position relative to xMid
+                    .attr("y", 5) // Center the text vertically
+                    .attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
                     .text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
-
                 taskPoints.exit().remove();
             }
 
@@ -256,7 +254,6 @@
                 d3.select(this)
                     .select("circle")
                     .attr("r", width / 80);
-                d3.select(this).select("text").attr("visibility", "visible");
             }
 
             function unhighlightTaskPoint(d) {
@@ -265,7 +262,7 @@
                 d3.select(this)
                     .select("circle")
                     .attr("r", width / 100);
-                d3.select(this).select("text").attr("visibility", "hidden");
+                d3.select(this).select("text");
             }
 
             // Render task list in the DOM
@@ -345,7 +342,7 @@
             // Update the task display on the chart
             function updateTaskDisplay(task) {
                 const taskElement = svg.selectAll(".task").filter((d) => d.id === task.id);
-                taskElement.select("text").text((d) => d.label);
+                taskElement.select("text").text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
                 taskElement.select("circle").attr("fill", (d) => d.color);
             }
 
@@ -354,13 +351,16 @@
                 isDragging = true;
 
                 d3.select(this).select("circle").attr("cursor", "grabbing");
-                d3.select(this).select("text").attr("visibility", "visible");
             }
 
             function dragged(event, d) {
                 d.x = Math.max(xMin, Math.min(xMax, event.x));
                 d.y = hillFn(d.x);
                 d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+                d3.select(this)
+                    .select("text")
+                    .attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
+                    .attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)); // Adjust x position based on the point's position relative to xMid
             }
 
             function dragEnded(event, d) {
@@ -369,7 +369,6 @@
                 d3.select(this)
                     .select("circle")
                     .attr("r", width / 100);
-                d3.select(this).select("text").attr("visibility", "hidden");
 
                 // If task is dragged to the end (+/- 5), mark it as completed
                 if (d.x >= xMax - 5) {
