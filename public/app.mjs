@@ -19,279 +19,280 @@ const maxTaskTextLength = 64;
 
 // Initialize the hill chart
 function initHillChart() {
-	const hillPoints = d3.range(xMin, xMax).map((x) => ({ x, y: hillConfig.yOf(x) }));
+  const hillPoints = d3.range(xMin, xMax).map((x) => ({x, y: hillConfig.yOf(x)}));
 
-	svg.append("path")
-		.datum(hillPoints)
-		.attr("class", "hill-path")
-		.attr(
-			"d",
-			d3
-			.line()
-			.curve(d3.curveBasis)
-			.x((d) => d.x)
-			.y((d) => d.y),
-		);
+  svg.append("path")
+    .datum(hillPoints)
+    .attr("class", "hill-path")
+    .attr(
+      "d",
+      d3
+        .line()
+        .curve(d3.curveBasis)
+        .x((d) => d.x)
+        .y((d) => d.y),
+    );
 
-	svg.append("line")
-		.attr("x1", xMid)
-		.attr("x2", xMid)
-		.attr("y1", hillConfig.yOf(xMid) + height / 8)
-		.attr("y2", amplitude + verticalShift - height / 8)
-		.attr("stroke", "gray")
-		.attr("stroke-dasharray", "5,5");
+  svg.append("line")
+    .attr("x1", xMid)
+    .attr("x2", xMid)
+    .attr("y1", hillConfig.yOf(xMid) + height / 8)
+    .attr("y2", amplitude + verticalShift - height / 8)
+    .attr("stroke", "gray")
+    .attr("stroke-dasharray", "5,5");
 
-	const labels = [
-		{ x: xMid - xMid / 2, text: "RESEARCHING" },
-		{ x: xMid + xMid / 2, text: "DEVELOPING" },
-	];
+  const labels = [
+    {x: xMid - xMid / 2, text: "RESEARCHING"},
+    {x: xMid + xMid / 2, text: "DEVELOPING"},
+  ];
 
-	labels.forEach(({ x, text }) => {
-		svg.append("text")
-			.attr("x", x)
-			.attr("y", amplitude + verticalShift + 10)
-			.attr("text-anchor", "middle")
-			.attr("font-size", screen.width > 640 ? "14" : "10")
-			.text(text);
-	});
+  labels.forEach(({x, text}) => {
+    svg.append("text")
+      .attr("x", x)
+      .attr("y", amplitude + verticalShift + 10)
+      .attr("text-anchor", "middle")
+      .attr("font-size", screen.width > 640 ? "14" : "10")
+      .text(text);
+  });
 }
 
 // Function to load tasks from localStorage
 function resetPage() {
-	if (
-		confirm("Are you sure you want to delete ALL tasks on this page?\n\nThis action cannot be undone.")
-	) {
-		localStorage.removeItem("chartTitle");
-		localStorage.removeItem("tasks");
-		location.reload();
-	}
+  if (
+    confirm("Are you sure you want to delete ALL tasks on this page?\n\nThis action cannot be undone.")
+  ) {
+    localStorage.removeItem("chartTitle");
+    localStorage.removeItem("tasks");
+    location.reload();
+  }
 }
 
 // Render all task points on the chart
 async function renderTasksOnChart() {
-	const tasks = await getTasks();
-	const taskPoints = svg.selectAll(".task").data(
-		tasks.filter((d) => !d.completed),
-		(d) => d.id,
-	);
+  const tasks = await getTasks();
+  const taskPoints = svg.selectAll(".task").data(
+    tasks.filter((d) => !d.completed),
+    (d) => d.id,
+  );
 
-	const taskGroup = taskPoints
-	.enter()
-	.append("g")
-	.attr("class", "task")
-	.attr("transform", (d) => `translate(${d.x},${d.y})`)
-	.style("cursor", "grab")
-	.call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded))
-	.on("mouseover", highlightTaskPoint)
-	.on("mouseout", unhighlightTaskPoint);
+  const taskGroup = taskPoints
+    .enter()
+    .append("g")
+    .attr("class", "task")
+    .attr("transform", (d) => `translate(${d.x},${d.y})`)
+    .style("cursor", "grab")
+    .call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded))
+    .on("mouseover", highlightTaskPoint)
+    .on("mouseout", unhighlightTaskPoint);
 
-	taskGroup
-	.append("circle")
-	.attr("r", width / 100)
-	.attr("class", "task-point")
-	.attr("fill", (d) => d.color);
+  taskGroup
+    .append("circle")
+    .attr("r", width / 100)
+    .attr("class", "task-point")
+    .attr("fill", (d) => d.color);
 
-	taskGroup
-	.append("text")
-	.attr("class", "task-label")
-	.attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)) // Adjust x position based on the point's position relative to xMid
-	.attr("y", 5) // Center the text vertically
-	.attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
-	.text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
-	taskPoints.exit().remove();
+  taskGroup
+    .append("text")
+    .attr("class", "task-label")
+    .attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)) // Adjust x position based on the point's position relative to xMid
+    .attr("y", 5) // Center the text vertically
+    .attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
+    .text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
+  taskPoints.exit().remove();
 }
 
 function highlightTaskPoint() {
-	if (isDragging) return;
+  if (isDragging) return;
 
-	d3.select(this)
-		.select("circle")
-		.attr("r", width / 80);
+  d3.select(this)
+    .select("circle")
+    .attr("r", width / 80);
 }
 
 function unhighlightTaskPoint() {
-	if (isDragging) return;
+  if (isDragging) return;
 
-	d3.select(this)
-		.select("circle")
-		.attr("r", width / 100);
-	d3.select(this).select("text");
+  d3.select(this)
+    .select("circle")
+    .attr("r", width / 100);
+  d3.select(this).select("text");
 }
 
 // Render task list in the DOM
 async function renderTaskList() {
-	taskList.innerHTML = ""; // Clear existing tasks
+  taskList.innerHTML = ""; // Clear existing tasks
 
-	// Sort tasks to place completed tasks at the bottom
-	const tasks = await getTasks();
-	const sortedTasks = tasks.slice().sort((a, b) => {
-		if (a.completed === b.completed) {
-			return a.x - b.x;
-		}
-		return a.completed - b.completed;
-	});
+  // Sort tasks to place completed tasks at the bottom
+  const tasks = await getTasks();
+  const sortedTasks = tasks.slice().sort((a, b) => {
+    if (a.completed === b.completed) {
+      return a.x - b.x;
+    }
+    return a.completed - b.completed;
+  });
 
-	sortedTasks.forEach((task) => {
-		const taskItem = createTaskListItem(task);
-		taskList.appendChild(taskItem);
-	});
+  sortedTasks.forEach((task) => {
+    const taskItem = createTaskListItem(task);
+    taskList.appendChild(taskItem);
+  });
 
-	await renderCompletedTasksPoint();
+  await renderCompletedTasksPoint();
+  history.pushState(null, null, `#${createTaskDataUrl(sortedTasks)}`);
 }
 
 // Create a single task list item
 function createTaskListItem(task) {
-	const template = document.getElementById("task-list-item-template");
-	const taskItem = template.content.cloneNode(true).querySelector("li");
-	
-	const colorLabel = taskItem.querySelector(".color-indicator");
-	const colorInput = taskItem.querySelector(".task-color-input");
-	const statusIcon = taskItem.querySelector(".task-status-icon");
-	const labelInput = taskItem.querySelector(".task-label-input");
+  const template = document.getElementById("task-list-item-template");
+  const taskItem = template.content.cloneNode(true).querySelector("li");
 
-	colorLabel.style.color = task.completed ? "#c2c2c2" : task.color;
+  const colorLabel = taskItem.querySelector(".color-indicator");
+  const colorInput = taskItem.querySelector(".task-color-input");
+  const statusIcon = taskItem.querySelector(".task-status-icon");
+  const labelInput = taskItem.querySelector(".task-label-input");
 
-	colorInput.value = task.color;
-	colorInput.dataset.taskId = task.id;
+  colorLabel.style.color = task.completed ? "#c2c2c2" : task.color;
 
-	statusIcon.dataset.taskId = task.id;
-	statusIcon.classList.add(task.completed ? "fa-check-square" : "fa-square");
-	statusIcon.classList.add(task.completed ? "text-green-500" : "text-blue-500");
-	
-	labelInput.value = task.label;
-	labelInput.dataset.taskId = task.id;
-	labelInput.maxLength = maxTaskTextLength;
-	if (task.completed) {
-		colorInput.disabled = true;
-		labelInput.disabled = true;
-		labelInput.classList.add("line-through", "text-gray-300");
-	}
+  colorInput.value = task.color;
+  colorInput.dataset.taskId = task.id;
 
-	addTaskItemEventListeners(taskItem, task);
-	return taskItem;
+  statusIcon.dataset.taskId = task.id;
+  statusIcon.classList.add(task.completed ? "fa-check-square" : "fa-square");
+  statusIcon.classList.add(task.completed ? "text-green-500" : "text-blue-500");
+
+  labelInput.value = task.label;
+  labelInput.dataset.taskId = task.id;
+  labelInput.maxLength = maxTaskTextLength;
+  if (task.completed) {
+    colorInput.disabled = true;
+    labelInput.disabled = true;
+    labelInput.classList.add("line-through", "text-gray-300");
+  }
+
+  addTaskItemEventListeners(taskItem, task);
+  return taskItem;
 }
 
 // Add event listeners to a task list item
 function addTaskItemEventListeners(taskItem, task) {
-	taskItem.querySelector(".task-label-input").addEventListener("change", async (event) => {
-		await updateTask(task.id, { label: event.target.value });
-		renderTaskList();
+  taskItem.querySelector(".task-label-input").addEventListener("change", async (event) => {
+    await updateTask(task.id, {label: event.target.value});
+    renderTaskList();
 
-		updateTaskDisplay(task);
-	});
+    updateTaskDisplay(task);
+  });
 
-	taskItem.querySelector(".task-color-input").addEventListener("input", async (event) => {
-		await updateTask(task.id, { color: event.target.value });
-		await renderTaskList();
-		updateTaskDisplay(task);
-	});
+  taskItem.querySelector(".task-color-input").addEventListener("input", async (event) => {
+    await updateTask(task.id, {color: event.target.value});
+    await renderTaskList();
+    updateTaskDisplay(task);
+  });
 
-	taskItem.querySelector(".task-status-icon").addEventListener("click", async () => {
-		await toggleTaskCompletion(task.id);
-		await renderTaskList();
-	});
+  taskItem.querySelector(".task-status-icon").addEventListener("click", async () => {
+    await toggleTaskCompletion(task.id);
+    await renderTaskList();
+  });
 
-	taskItem.querySelector(".removeTask").addEventListener("click", async () => {
-		await removeTask(task.id);
-		await renderTaskList();
-	});
+  taskItem.querySelector(".removeTask").addEventListener("click", async () => {
+    await removeTask(task.id);
+    await renderTaskList();
+  });
 }
 
 // Update the task display on the chart
 function updateTaskDisplay(task) {
-	const taskElement = svg.selectAll(".task").filter((d) => d.id === task.id);
-	taskElement.select("text").text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
-	taskElement.select("circle").attr("fill", (d) => d.color);
+  const taskElement = svg.selectAll(".task").filter((d) => d.id === task.id);
+  taskElement.select("text").text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
+  taskElement.select("circle").attr("fill", (d) => d.color);
 }
 
 // Handle task dragging
 function dragStarted(event, d) {
-	isDragging = true;
+  isDragging = true;
 
-	d3.select(this).select("circle").attr("cursor", "grabbing");
+  d3.select(this).select("circle").attr("cursor", "grabbing");
 }
 
 async function dragged(event, d) {
-	const pos = {
-		x: Math.max(xMin, Math.min(xMax, event.x)),
-		y: hillConfig.yOf(d.x),
-	}
-	await updateTask(d.id, pos);
-	d3.select(this).attr("transform", `translate(${pos.x},${pos.y})`);
-	d3.select(this)
-		.select("text")
-		.attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
-		.attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)); // Adjust x position based on the point's position relative to xMid
+  const pos = {
+    x: Math.max(xMin, Math.min(xMax, event.x)),
+    y: hillConfig.yOf(d.x),
+  }
+  await updateTask(d.id, pos);
+  d3.select(this).attr("transform", `translate(${pos.x},${pos.y})`);
+  d3.select(this)
+    .select("text")
+    .attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
+    .attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)); // Adjust x position based on the point's position relative to xMid
 }
 
 async function dragEnded(event, d) {
-	isDragging = false;
+  isDragging = false;
 
-	d3.select(this)
-		.select("circle")
-		.attr("r", width / 100);
+  d3.select(this)
+    .select("circle")
+    .attr("r", width / 100);
 
-	// If task is dragged to the end (+/- 5), mark it as completed
-	if (d.x >= xMax - 5) {
-		d.x = xMax - 20;
-		d.y = hillConfig.yOf(d.x);
-		await toggleTaskCompletion(d.id);
-	}
-	await renderTaskList();
+  // If task is dragged to the end (+/- 5), mark it as completed
+  if (d.x >= xMax - 5) {
+    d.x = xMax - 20;
+    d.y = hillConfig.yOf(d.x);
+    await toggleTaskCompletion(d.id);
+  }
+  await renderTaskList();
 }
 
 async function toggleTaskCompletion(taskId) {
-	const isCompleted = await toggleTaskAttribute(taskId, "completed");
-	if (isCompleted) {
-		svg.selectAll(".task")
-			.filter((d) => d.id === taskId)
-			.remove();
-	} else {
-		await renderTasksOnChart();
-	}
+  const isCompleted = await toggleTaskAttribute(taskId, "completed");
+  if (isCompleted) {
+    svg.selectAll(".task")
+      .filter((d) => d.id === taskId)
+      .remove();
+  } else {
+    await renderTasksOnChart();
+  }
 }
 
 // Remove a task
 async function removeTask(taskId) {
-	await removeTaskById(taskId);
-	svg.selectAll(".task")
-		.filter((d) => d.id === taskId)
-		.remove();
+  await removeTaskById(taskId);
+  svg.selectAll(".task")
+    .filter((d) => d.id === taskId)
+    .remove();
 }
 
 // Render completed tasks point
 async function renderCompletedTasksPoint() {
-	const tasks = await getTasks();
-	const completedCount = tasks.filter((task) => task.completed).length;
-	if (completedTasksPoint) {
-		completedTasksPoint.remove();
-	}
+  const tasks = await getTasks();
+  const completedCount = tasks.filter((task) => task.completed).length;
+  if (completedTasksPoint) {
+    completedTasksPoint.remove();
+  }
 
-	if (completedCount === 0) {
-		return;
-	}
+  if (completedCount === 0) {
+    return;
+  }
 
-	completedTasksPoint = svg.append("g").attr("transform", `translate(${xMax}, ${(hillConfig.yOf(xMax))})`);
+  completedTasksPoint = svg.append("g").attr("transform", `translate(${xMax}, ${(hillConfig.yOf(xMax))})`);
 
-	completedTasksPoint.append("circle").attr("r", 15).attr("fill", "#c2c2c2");
+  completedTasksPoint.append("circle").attr("r", 15).attr("fill", "#c2c2c2");
 
-	completedTasksPoint
-		.append("text")
-		.attr("class", "task-label")
-		.attr("x", 0)
-		.attr("y", 5)
-		.attr("text-anchor", "middle")
-		.attr("font-weight", "bold")
-		.text(completedCount);
+  completedTasksPoint
+    .append("text")
+    .attr("class", "task-label")
+    .attr("x", 0)
+    .attr("y", 5)
+    .attr("text-anchor", "middle")
+    .attr("font-weight", "bold")
+    .text(completedCount);
 }
 
 // Add a new task
 async function addNewTask() {
-	const task = buildTask({x: xMin, y: hillConfig.yOf(xMin)})
+  const task = buildTask({x: xMin, y: hillConfig.yOf(xMin)})
 
-	await saveTask(task);
-	await renderTaskList();
-	await renderTasksOnChart();
+  await saveTask(task);
+  await renderTaskList();
+  await renderTasksOnChart();
 }
 
 // Event Listeners
@@ -299,54 +300,54 @@ document.getElementById("addTask").addEventListener("click", addNewTask);
 document.getElementById("exportPNG").addEventListener("click", exportChartAsPNG);
 document.getElementById("deleteAll").addEventListener("click", resetPage);
 document.getElementById("print").addEventListener("click", async () => {
-	await renderTasksOnChart();
-	await renderTaskList();
-	window.print();
+  await renderTasksOnChart();
+  await renderTaskList();
+  window.print();
 });
 
 const chartTitleElement = document.getElementById("chartTitle");
 
 function loadChartTitle() {
-	chartTitleElement.value = localStorage.getItem("chartTitle");
+  chartTitleElement.value = localStorage.getItem("chartTitle");
 }
 
 function updateChartTitle() {
-	const chartTitle = chartTitleElement.value;
-	localStorage.setItem("chartTitle", chartTitle);
+  const chartTitle = chartTitleElement.value;
+  localStorage.setItem("chartTitle", chartTitle);
 }
 
 chartTitleElement.addEventListener("input", () => {
-	updateChartTitle();
-	loadChartTitle();
+  updateChartTitle();
+  loadChartTitle();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-	loadChartTitle();
+  loadChartTitle();
 })
 
 // Initial rendering
 initHillChart();
 
 const rerenderPage = async () => {
-    const maybeTasks = tryParseTaskDataUrl(window.location.hash.slice(1));
-    if (maybeTasks) await saveTasks(maybeTasks);
-    await renderTasksOnChart();
-    await renderTaskList();
+  const maybeTasks = tryParseTaskDataUrl(window.location.hash.slice(1));
+  if (maybeTasks) await saveTasks(maybeTasks);
+  await renderTasksOnChart();
+  await renderTaskList();
 }
 
 // Load tasks when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
-    if (window.location.hash) {
-        const maybeTasks = tryParseTaskDataUrl(window.location.hash.slice(1));
-        if (maybeTasks) await saveTasks(maybeTasks);
-    } else {
-        const initialTasks = await getTasks();
-        if (!initialTasks.length) {
-            await saveTasks(buildDemoTasks(hillConfig))
-        }
+  if (window.location.hash) {
+    const maybeTasks = tryParseTaskDataUrl(window.location.hash.slice(1));
+    if (maybeTasks) await saveTasks(maybeTasks);
+  } else {
+    const initialTasks = await getTasks();
+    if (!initialTasks.length) {
+      await saveTasks(buildDemoTasks(hillConfig))
     }
-    await renderTasksOnChart();
-    await renderTaskList();
+  }
+  await renderTasksOnChart();
+  await renderTaskList();
 });
 
 window.addEventListener("hashchange", rerenderPage);
