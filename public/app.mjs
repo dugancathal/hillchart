@@ -1,25 +1,10 @@
 import {exportChartAsPNG} from "./png-export.mjs";
+import {buildTask} from "./tasks.mjs";
+import {buildHillConfig} from "./hill-math.mjs";
 
-const width = screen.width * 0.9 > 800 ? 1200 : screen.width * 0.9;
-const height = width / 3;
+const hillConfig = buildHillConfig(window.screen);
 
-const xMin = 20;
-const xMax = width - 20;
-const xMid = (xMin + xMax) / 2;
-
-// const amplitude = 150; // Amplitude: the peak deviation of the function from its central value
-// const period = 1200; // Period: the length of one complete cycle of the sine wave
-// const phaseShift = 300; // Phase Shift: horizontal shift of the sine wave
-// const verticalShift = 200; // Vertical Shift: vertical displacement of the sine wave
-const amplitude = height / 2.5;
-const period = width;
-const phaseShift = width / 4;
-const verticalShift = height / 2;
-// Calculate the coefficient for the period
-const B = (2 * Math.PI) / period; // Coefficient for period: determines the frequency of the sine wave
-
-// Define the function using the parameters
-const hillFn = (x) => amplitude * Math.sin(B * (x + phaseShift)) + verticalShift;
+const {height, width, xMin, xMax, xMid, amplitude, verticalShift} = hillConfig;
 
 const colorPalette = ["#3498db", "#e74c3c", "#2ecc71", "#9b59b6", "#f1c40f"];
 
@@ -31,7 +16,7 @@ let demoTasks = [
 	{ id: 1, label: "Feature A", x: xMin + 50, color: "#1f77b4", completed: false },
 	{ id: 2, label: "Feature B", x: xMid - xMid / 2, color: "#ff7f0e", completed: false },
 	{ id: 3, label: "Feature C", x: xMid - xMid / 3, color: "#2ca02c", completed: false },
-].map((d) => ({ ...d, y: hillFn(d.x) }));
+].map((d) => ({ ...d, y: hillConfig.yOf(d.x) }));
 let tasks = [...demoTasks];
 
 let completedTasksPoint;
@@ -42,7 +27,7 @@ const maxTaskTextLength = 64;
 
 // Initialize the hill chart
 function initHillChart() {
-	const hillPoints = d3.range(xMin, xMax).map((x) => ({ x, y: hillFn(x) }));
+	const hillPoints = d3.range(xMin, xMax).map((x) => ({ x, y: hillConfig.yOf(x) }));
 
 	svg.append("path")
 		.datum(hillPoints)
@@ -59,7 +44,7 @@ function initHillChart() {
 	svg.append("line")
 		.attr("x1", xMid)
 		.attr("x2", xMid)
-		.attr("y1", hillFn(xMid) + height / 8)
+		.attr("y1", hillConfig.yOf(xMid) + height / 8)
 		.attr("y2", amplitude + verticalShift - height / 8)
 		.attr("stroke", "gray")
 		.attr("stroke-dasharray", "5,5");
@@ -251,7 +236,7 @@ function dragStarted(event, d) {
 
 function dragged(event, d) {
 	d.x = Math.max(xMin, Math.min(xMax, event.x));
-	d.y = hillFn(d.x);
+	d.y = hillConfig.yOf(d.x);
 	d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
 	d3.select(this)
 		.select("text")
@@ -269,7 +254,7 @@ function dragEnded(event, d) {
 	// If task is dragged to the end (+/- 5), mark it as completed
 	if (d.x >= xMax - 5) {
 		d.x = xMax - 20;
-		d.y = hillFn(d.x);
+		d.y = hillConfig.yOf(d.x);
 		toggleTaskCompletion(d.id);
 	}
 	saveTasks();
@@ -309,7 +294,7 @@ function renderCompletedTasksPoint() {
 		return;
 	}
 
-	completedTasksPoint = svg.append("g").attr("transform", `translate(${xMax}, ${hillFn(xMax)})`);
+	completedTasksPoint = svg.append("g").attr("transform", `translate(${xMax}, ${(hillConfig.yOf(xMax))})`);
 
 	completedTasksPoint.append("circle").attr("r", 15).attr("fill", "#c2c2c2");
 
@@ -323,19 +308,11 @@ function renderCompletedTasksPoint() {
 		.text(completedCount);
 }
 
-const buildTask = (id, color, x) => ({
-	id,
-	label: `Task ${id}`,
-	x,
-	color,
-	y: hillFn(x),
-	completed: false,
-})
-
 // Add a new task
 function addNewTask() {
 	const newId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-	tasks.push(buildTask(newId, colorPalette[(newId - 1) % colorPalette.length], xMin));
+	const pos = { x: xMin, y: hillConfig.yOf(xMin) };
+	tasks.push(buildTask(newId, colorPalette[(newId - 1) % colorPalette.length], pos));
 	saveTasks();
 	renderTasksOnChart();
 	renderTaskList();
