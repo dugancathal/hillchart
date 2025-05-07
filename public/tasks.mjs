@@ -30,7 +30,13 @@ export const getTasks = async () => {
 
 const getTaskById = async (id) => (await getTasks()).find(it => it.id === id)
 
-export const saveTasks = (tasks) => localStorage.setItem("tasks", JSON.stringify(tasks));
+export const saveTasks = async (tasks) => {
+    return new Promise((res) => {
+        locallyCachedTasks = tasks;
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        return res(true);
+    });
+};
 
 export const saveTask = async (task) => {
     return new Promise((res) => {
