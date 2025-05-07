@@ -1,10 +1,4 @@
-const genRandomId = () => crypto.randomUUID();
-function randomColor() {
-    const h = Math.floor(Math.random() * 360);
-    const s = Math.floor(Math.random() * 75);
-    const l = Math.floor(Math.random() * 50);
-    return `hsl(${h}, ${s}%, ${l}%)`;
-}
+import { genRandomId, randomColor } from "./util.mjs";
 
 export const buildTask = (overrides = {}) => {
     const id = genRandomId();
