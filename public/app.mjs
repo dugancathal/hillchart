@@ -33,7 +33,6 @@ let demoTasks = [
 ].map((d) => ({ ...d, y: hillFn(d.x) }));
 let tasks = [...demoTasks];
 
-let selectedTask = null;
 let completedTasksPoint;
 
 let isDragging = false;
@@ -104,19 +103,12 @@ function resetPage() {
 }
 
 function loadChartTitle() {
-	const title = localStorage.getItem("chartTitle");
-	chartTitleElement.value = title;
+    chartTitleElement.value = localStorage.getItem("chartTitle");
 }
 
 function updateChartTitle() {
 	const chartTitle = chartTitleElement.value;
 	localStorage.setItem("chartTitle", chartTitle);
-}
-
-function removeChartTitle() {
-	chartTitleElement.value = "";
-	updateChartTitle();
-	loadChartTitle();
 }
 
 // Render all task points on the chart
@@ -152,7 +144,7 @@ function renderTasksOnChart() {
 	taskPoints.exit().remove();
 }
 
-function highlightTaskPoint(d) {
+function highlightTaskPoint() {
 	if (isDragging) return;
 
 	d3.select(this)
@@ -160,7 +152,7 @@ function highlightTaskPoint(d) {
 		.attr("r", width / 80);
 }
 
-function unhighlightTaskPoint(d) {
+function unhighlightTaskPoint() {
 	if (isDragging) return;
 
 	d3.select(this)
