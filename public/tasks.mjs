@@ -6,14 +6,18 @@ function randomColor() {
     return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
-export const buildTask = (pos, id = genRandomId(), color = randomColor()) => ({
-    id,
-    label: `Task ${id}`,
-    color,
-    x: pos.x,
-    y: pos.y,
-    completed: false,
-})
+export const buildTask = (overrides = {}) => {
+    const id = genRandomId();
+    const color = randomColor();
+    return Object.assign({
+        id,
+        label: `Task ${id}`,
+        color,
+        x: 0,
+        y: 0,
+        completed: false,
+    }, overrides);
+}
 
 let locallyCachedTasks = [];
 
@@ -32,12 +36,12 @@ export const getTasks = async () => {
 
 const getTaskById = async (id) => (await getTasks()).find(it => it.id === id)
 
-const persistTasks = (tasks) => localStorage.setItem("tasks", JSON.stringify(tasks));
+export const saveTasks = (tasks) => localStorage.setItem("tasks", JSON.stringify(tasks));
 
 export const saveTask = async (task) => {
     return new Promise((res) => {
         locallyCachedTasks.push(task);
-        persistTasks(locallyCachedTasks);
+        saveTasks(locallyCachedTasks);
         return res(true);
     })
 }
@@ -50,7 +54,7 @@ export const updateTask = async (taskId, updates) => {
         }
         const task = locallyCachedTasks[taskIndex];
         const updated = Object.assign(task, updates);
-        persistTasks([
+        saveTasks([
             ...locallyCachedTasks.slice(0, taskIndex),
             updated,
             ...locallyCachedTasks.slice(taskIndex + 1)
@@ -71,7 +75,7 @@ export const toggleTaskAttribute = async (taskId, attribute) => {
 export const removeTaskById = async (taskId) => {
     return new Promise((res) => {
         locallyCachedTasks = locallyCachedTasks.filter(it => it.id !== taskId);
-        persistTasks(locallyCachedTasks);
+        saveTasks(locallyCachedTasks);
         res();
     })
 }

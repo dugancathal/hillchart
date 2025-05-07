@@ -1,6 +1,7 @@
 import {exportChartAsPNG} from "./png-export.mjs";
-import {buildTask, getTasks, removeTaskById, saveTask, toggleTaskAttribute, updateTask} from "./tasks.mjs";
+import {buildTask, getTasks, removeTaskById, saveTask, saveTasks, toggleTaskAttribute, updateTask} from "./tasks.mjs";
 import {buildHillConfig} from "./hill-math.mjs";
+import {buildDemoTasks} from "./demoTasks.mjs";
 
 const hillConfig = buildHillConfig(window.screen);
 
@@ -10,13 +11,6 @@ const chartTitleElement = document.getElementById("chartTitle");
 const taskList = document.getElementById("taskList");
 
 const svg = d3.select("#chart").attr("width", width).attr("height", height);
-let demoTasks = [
-	{ id: 1, label: "Feature A", x: xMin + 50, color: "#1f77b4", completed: false },
-	{ id: 2, label: "Feature B", x: xMid - xMid / 2, color: "#ff7f0e", completed: false },
-	{ id: 3, label: "Feature C", x: xMid - xMid / 3, color: "#2ca02c", completed: false },
-].map((d) => ({ ...d, y: hillConfig.yOf(d.x) }));
-let tasks = [...demoTasks];
-
 let completedTasksPoint;
 
 let isDragging = false;
@@ -63,10 +57,6 @@ function initHillChart() {
 }
 
 // Function to load tasks from localStorage
-async function loadTasks() {
-	tasks = await getTasks();
-}
-
 function resetPage() {
 	if (
 		confirm("Are you sure you want to delete ALL tasks on this page?\n\nThis action cannot be undone.")
@@ -328,7 +318,10 @@ initHillChart();
 // Load tasks when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
 	loadChartTitle();
-	await loadTasks();
+	const initialTasks = await getTasks();
+	if(!initialTasks.length) {
+		await saveTasks(buildDemoTasks(hillConfig))
+	}
 	await renderTasksOnChart();
 	await renderTaskList();
 });
