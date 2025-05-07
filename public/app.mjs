@@ -140,25 +140,31 @@ async function renderTaskList() {
 
 // Create a single task list item
 function createTaskListItem(task) {
-	const taskItem = document.createElement("li");
-	taskItem.innerHTML = `
-		    <div class="flex items-center justify-between px-2 hover:bg-gray-200 active:bg-gray-200 group">
+	const template = document.getElementById("task-list-item-template");
+	const taskItem = template.content.cloneNode(true).querySelector("li");
+	
+	const colorLabel = taskItem.querySelector(".color-indicator");
+	const colorInput = taskItem.querySelector(".task-color-input");
+	const statusIcon = taskItem.querySelector(".task-status-icon");
+	const labelInput = taskItem.querySelector(".task-label-input");
 
-		      <label class="color-indicator mr-5 bg-transparent text-xl" style="color: ${task.completed ? "#c2c2c2" : task.color};">
-			<input class="task-color-input hidden" type="color" value="${task.color}" data-task-id="${task.id}" ${task.completed ? "disabled" : ""}/>
-			<i class="fa-solid fa-circle"></i>
-		      </label>
+	colorLabel.style.color = task.completed ? "#c2c2c2" : task.color;
 
-			<div class="flex items-center flex-1">
-			    <i class="task-status-icon hover:cursor-pointer fa-regular mr-2 ${task.completed ? "fa-check-square text-green-500" : "fa-square text-blue-500"}" data-task-id="${task.id}"></i>
-			    <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1 ${task.completed ? "line-through text-gray-300" : ""}" type="text" value="${task.label}" data-task-id="${task.id}" maxlength=${maxTaskTextLength} ${task.completed ? "disabled" : ""}/>
-			</div>
+	colorInput.value = task.color;
+	colorInput.dataset.taskId = task.id;
 
-			<button class="removeTask px-3 ml-2 text-red-300 hover:text-red-500 print:hidden">
-			    <i class="fa-solid fa-trash hidden group-hover:block"></i>
-			</button>
-		    </div>
-		`;
+	statusIcon.dataset.taskId = task.id;
+	statusIcon.classList.add(task.completed ? "fa-check-square" : "fa-square");
+	statusIcon.classList.add(task.completed ? "text-green-500" : "text-blue-500");
+	
+	labelInput.value = task.label;
+	labelInput.dataset.taskId = task.id;
+	labelInput.maxLength = maxTaskTextLength;
+	if (task.completed) {
+		colorInput.disabled = true;
+		labelInput.disabled = true;
+		labelInput.classList.add("line-through", "text-gray-300");
+	}
 
 	addTaskItemEventListeners(taskItem, task);
 	return taskItem;

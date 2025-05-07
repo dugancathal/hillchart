@@ -96,6 +96,25 @@
                 <!-- Dynamic task items will be inserted here -->
             </ul>
         </section>
+
+        <template id="task-list-item-template">
+            <li>
+                <div class="flex items-center justify-between px-2 hover:bg-gray-200 active:bg-gray-200 group">
+                    <label class="color-indicator mr-5 bg-transparent text-xl">
+                        <input class="task-color-input hidden" type="color" data-task-id="" />
+                        <i class="fa-solid fa-circle"></i>
+                    </label>
+                    <div class="flex items-center flex-1">
+                        <i class="task-status-icon hover:cursor-pointer fa-regular mr-2" data-task-id=""></i>
+                        <input class="task-label-input flex-1 bg-transparent focus:outline-none p-1" type="text" data-task-id="" />
+                    </div>
+                    <button class="removeTask px-3 ml-2 text-red-300 hover:text-red-500 print:hidden">
+                        <i class="fa-solid fa-trash hidden group-hover:block"></i>
+                    </button>
+                </div>
+            </li>
+        </template>
+
         <script type="module" src="public/app.mjs"></script>
     </body>
 </html>
