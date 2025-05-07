@@ -2,6 +2,7 @@ import {exportChartAsPNG} from "./png-export.mjs";
 import {buildTask, getTasks, removeTaskById, saveTask, saveTasks, toggleTaskAttribute, updateTask} from "./tasks.mjs";
 import {buildHillConfig} from "./hill-math.mjs";
 import {buildDemoTasks} from "./demoTasks.mjs";
+import {createTaskDataUrl, tryParseTaskDataUrl} from "./urlStorage.js";
 
 const hillConfig = buildHillConfig(window.screen);
 
@@ -304,6 +305,7 @@ document.getElementById("print").addEventListener("click", async () => {
 });
 
 const chartTitleElement = document.getElementById("chartTitle");
+
 function loadChartTitle() {
 	chartTitleElement.value = localStorage.getItem("chartTitle");
 }
@@ -325,13 +327,26 @@ document.addEventListener('DOMContentLoaded', () => {
 // Initial rendering
 initHillChart();
 
+const rerenderPage = async () => {
+    const maybeTasks = tryParseTaskDataUrl(window.location.hash.slice(1));
+    if (maybeTasks) await saveTasks(maybeTasks);
+    await renderTasksOnChart();
+    await renderTaskList();
+}
+
 // Load tasks when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
-	const initialTasks = await getTasks();
-	if(!initialTasks.length) {
-		await saveTasks(buildDemoTasks(hillConfig))
-	}
-	await renderTasksOnChart();
-	await renderTaskList();
+    if (window.location.hash) {
+        const maybeTasks = tryParseTaskDataUrl(window.location.hash.slice(1));
+        if (maybeTasks) await saveTasks(maybeTasks);
+    } else {
+        const initialTasks = await getTasks();
+        if (!initialTasks.length) {
+            await saveTasks(buildDemoTasks(hillConfig))
+        }
+    }
+    await renderTasksOnChart();
+    await renderTaskList();
 });
 
+window.addEventListener("hashchange", rerenderPage);
