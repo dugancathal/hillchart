@@ -7,7 +7,6 @@ const hillConfig = buildHillConfig(window.screen);
 
 const {height, width, xMin, xMax, xMid, amplitude, verticalShift} = hillConfig;
 
-const chartTitleElement = document.getElementById("chartTitle");
 const taskList = document.getElementById("taskList");
 
 const svg = d3.select("#chart").attr("width", width).attr("height", height);
@@ -65,15 +64,6 @@ function resetPage() {
 		localStorage.removeItem("tasks");
 		location.reload();
 	}
-}
-
-function loadChartTitle() {
-    chartTitleElement.value = localStorage.getItem("chartTitle");
-}
-
-function updateChartTitle() {
-	const chartTitle = chartTitleElement.value;
-	localStorage.setItem("chartTitle", chartTitle);
 }
 
 // Render all task points on the chart
@@ -307,17 +297,30 @@ document.getElementById("print").addEventListener("click", async () => {
 	window.print();
 });
 
+const chartTitleElement = document.getElementById("chartTitle");
+function loadChartTitle() {
+	chartTitleElement.value = localStorage.getItem("chartTitle");
+}
+
+function updateChartTitle() {
+	const chartTitle = chartTitleElement.value;
+	localStorage.setItem("chartTitle", chartTitle);
+}
+
 chartTitleElement.addEventListener("input", () => {
 	updateChartTitle();
 	loadChartTitle();
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+	loadChartTitle();
+})
 
 // Initial rendering
 initHillChart();
 
 // Load tasks when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
-	loadChartTitle();
 	const initialTasks = await getTasks();
 	if(!initialTasks.length) {
 		await saveTasks(buildDemoTasks(hillConfig))
