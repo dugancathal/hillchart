@@ -63,6 +63,7 @@ function resetPage() {
   ) {
     localStorage.removeItem("chartTitle");
     localStorage.removeItem("tasks");
+    location.hash = '';
     location.reload();
   }
 }
