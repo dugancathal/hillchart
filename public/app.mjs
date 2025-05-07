@@ -323,18 +323,19 @@ function renderCompletedTasksPoint() {
 		.text(completedCount);
 }
 
+const buildTask = (id, color, x) => ({
+	id,
+	label: `Task ${id}`,
+	x,
+	color,
+	y: hillFn(x),
+	completed: false,
+})
+
 // Add a new task
 function addNewTask() {
 	const newId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-	const newTask = {
-		id: newId,
-		label: `Task ${newId}`,
-		x: xMin,
-		color: colorPalette[(newId - 1) % colorPalette.length],
-		y: hillFn(xMin),
-		completed: false,
-	};
-	tasks.push(newTask);
+	tasks.push(buildTask(newId, colorPalette[(newId - 1) % colorPalette.length], xMin));
 	saveTasks();
 	renderTasksOnChart();
 	renderTaskList();
