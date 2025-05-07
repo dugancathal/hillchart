@@ -1,12 +1,10 @@
 import {exportChartAsPNG} from "./png-export.mjs";
-import {buildTask} from "./tasks.mjs";
+import {buildTask, getTasks, removeTaskById, saveTask, toggleTaskAttribute, updateTask} from "./tasks.mjs";
 import {buildHillConfig} from "./hill-math.mjs";
 
 const hillConfig = buildHillConfig(window.screen);
 
 const {height, width, xMin, xMax, xMid, amplitude, verticalShift} = hillConfig;
-
-const colorPalette = ["#3498db", "#e74c3c", "#2ecc71", "#9b59b6", "#f1c40f"];
 
 const chartTitleElement = document.getElementById("chartTitle");
 const taskList = document.getElementById("taskList");
@@ -65,17 +63,8 @@ function initHillChart() {
 }
 
 // Function to load tasks from localStorage
-function loadTasks() {
-	const tasksJson = localStorage.getItem("tasks");
-	if (tasksJson) {
-		tasks = JSON.parse(tasksJson);
-	}
-}
-
-// Function to save tasks to localStorage
-function saveTasks() {
-	localStorage.setItem("tasks", JSON.stringify(tasks));
-	renderTaskList();
+async function loadTasks() {
+	tasks = await getTasks();
 }
 
 function resetPage() {
@@ -98,35 +87,36 @@ function updateChartTitle() {
 }
 
 // Render all task points on the chart
-function renderTasksOnChart() {
+async function renderTasksOnChart() {
+	const tasks = await getTasks();
 	const taskPoints = svg.selectAll(".task").data(
 		tasks.filter((d) => !d.completed),
 		(d) => d.id,
 	);
 
 	const taskGroup = taskPoints
-		.enter()
-		.append("g")
-		.attr("class", "task")
-		.attr("transform", (d) => `translate(${d.x},${d.y})`)
-		.style("cursor", "grab")
-		.call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded))
-		.on("mouseover", highlightTaskPoint)
-		.on("mouseout", unhighlightTaskPoint);
+	.enter()
+	.append("g")
+	.attr("class", "task")
+	.attr("transform", (d) => `translate(${d.x},${d.y})`)
+	.style("cursor", "grab")
+	.call(d3.drag().on("start", dragStarted).on("drag", dragged).on("end", dragEnded))
+	.on("mouseover", highlightTaskPoint)
+	.on("mouseout", unhighlightTaskPoint);
 
 	taskGroup
-		.append("circle")
-		.attr("r", width / 100)
-		.attr("class", "task-point")
-		.attr("fill", (d) => d.color);
+	.append("circle")
+	.attr("r", width / 100)
+	.attr("class", "task-point")
+	.attr("fill", (d) => d.color);
 
 	taskGroup
-		.append("text")
-		.attr("class", "task-label")
-		.attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)) // Adjust x position based on the point's position relative to xMid
-		.attr("y", 5) // Center the text vertically
-		.attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
-		.text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
+	.append("text")
+	.attr("class", "task-label")
+	.attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)) // Adjust x position based on the point's position relative to xMid
+	.attr("y", 5) // Center the text vertically
+	.attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
+	.text((d) => (d.label.length > 12 ? d.label.slice(0, 12) + "..." : d.label));
 	taskPoints.exit().remove();
 }
 
@@ -148,10 +138,11 @@ function unhighlightTaskPoint() {
 }
 
 // Render task list in the DOM
-function renderTaskList() {
+async function renderTaskList() {
 	taskList.innerHTML = ""; // Clear existing tasks
 
 	// Sort tasks to place completed tasks at the bottom
+	const tasks = await getTasks();
 	const sortedTasks = tasks.slice().sort((a, b) => {
 		if (a.completed === b.completed) {
 			return a.x - b.x;
@@ -164,7 +155,7 @@ function renderTaskList() {
 		taskList.appendChild(taskItem);
 	});
 
-	renderCompletedTasksPoint();
+	await renderCompletedTasksPoint();
 }
 
 // Create a single task list item
@@ -195,28 +186,27 @@ function createTaskListItem(task) {
 
 // Add event listeners to a task list item
 function addTaskItemEventListeners(taskItem, task) {
-	taskItem.querySelector(".task-label-input").addEventListener("change", (event) => {
-		task.label = event.target.value;
-		saveTasks();
+	taskItem.querySelector(".task-label-input").addEventListener("change", async (event) => {
+		await updateTask(task.id, { label: event.target.value });
+		renderTaskList();
+
 		updateTaskDisplay(task);
 	});
 
-	taskItem.querySelector(".task-color-input").addEventListener("input", (event) => {
-		task.color = event.target.value;
-		saveTasks();
+	taskItem.querySelector(".task-color-input").addEventListener("input", async (event) => {
+		await updateTask(task.id, { color: event.target.value });
+		await renderTaskList();
 		updateTaskDisplay(task);
 	});
 
-	taskItem.querySelector(".task-status-icon").addEventListener("click", () => {
-		toggleTaskCompletion(task.id);
-		saveTasks();
-		renderTaskList();
+	taskItem.querySelector(".task-status-icon").addEventListener("click", async () => {
+		await toggleTaskCompletion(task.id);
+		await renderTaskList();
 	});
 
-	taskItem.querySelector(".removeTask").addEventListener("click", () => {
-		removeTask(task.id);
-		saveTasks();
-		renderTaskList();
+	taskItem.querySelector(".removeTask").addEventListener("click", async () => {
+		await removeTask(task.id);
+		await renderTaskList();
 	});
 }
 
@@ -234,17 +224,20 @@ function dragStarted(event, d) {
 	d3.select(this).select("circle").attr("cursor", "grabbing");
 }
 
-function dragged(event, d) {
-	d.x = Math.max(xMin, Math.min(xMax, event.x));
-	d.y = hillConfig.yOf(d.x);
-	d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+async function dragged(event, d) {
+	const pos = {
+		x: Math.max(xMin, Math.min(xMax, event.x)),
+		y: hillConfig.yOf(d.x),
+	}
+	await updateTask(d.id, pos);
+	d3.select(this).attr("transform", `translate(${pos.x},${pos.y})`);
 	d3.select(this)
 		.select("text")
 		.attr("text-anchor", (d) => (d.x > xMid ? "end" : "start")) // Align text to the end or start based on the point's position
 		.attr("x", (d) => (width / 100 + 5) * (d.x > xMid ? -1 : 1)); // Adjust x position based on the point's position relative to xMid
 }
 
-function dragEnded(event, d) {
+async function dragEnded(event, d) {
 	isDragging = false;
 
 	d3.select(this)
@@ -255,36 +248,33 @@ function dragEnded(event, d) {
 	if (d.x >= xMax - 5) {
 		d.x = xMax - 20;
 		d.y = hillConfig.yOf(d.x);
-		toggleTaskCompletion(d.id);
+		await toggleTaskCompletion(d.id);
 	}
-	saveTasks();
+	await renderTaskList();
 }
 
-// Toggle task completion
-function toggleTaskCompletion(taskId) {
-	const task = tasks.find((t) => t.id === taskId);
-	task.completed = !task.completed;
-	saveTasks();
-	if (task.completed) {
+async function toggleTaskCompletion(taskId) {
+	const isCompleted = await toggleTaskAttribute(taskId, "completed");
+	if (isCompleted) {
 		svg.selectAll(".task")
 			.filter((d) => d.id === taskId)
 			.remove();
 	} else {
-		renderTasksOnChart();
+		await renderTasksOnChart();
 	}
 }
 
 // Remove a task
-function removeTask(taskId) {
-	tasks = tasks.filter((t) => t.id !== taskId);
-	saveTasks();
+async function removeTask(taskId) {
+	await removeTaskById(taskId);
 	svg.selectAll(".task")
 		.filter((d) => d.id === taskId)
 		.remove();
 }
 
 // Render completed tasks point
-function renderCompletedTasksPoint() {
+async function renderCompletedTasksPoint() {
+	const tasks = await getTasks();
 	const completedCount = tasks.filter((task) => task.completed).length;
 	if (completedTasksPoint) {
 		completedTasksPoint.remove();
@@ -309,22 +299,21 @@ function renderCompletedTasksPoint() {
 }
 
 // Add a new task
-function addNewTask() {
-	const newId = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
-	const pos = { x: xMin, y: hillConfig.yOf(xMin) };
-	tasks.push(buildTask(newId, colorPalette[(newId - 1) % colorPalette.length], pos));
-	saveTasks();
-	renderTasksOnChart();
-	renderTaskList();
+async function addNewTask() {
+	const task = buildTask({x: xMin, y: hillConfig.yOf(xMin)})
+
+	await saveTask(task);
+	await renderTaskList();
+	await renderTasksOnChart();
 }
 
 // Event Listeners
 document.getElementById("addTask").addEventListener("click", addNewTask);
 document.getElementById("exportPNG").addEventListener("click", exportChartAsPNG);
 document.getElementById("deleteAll").addEventListener("click", resetPage);
-document.getElementById("print").addEventListener("click", () => {
-	renderTasksOnChart();
-	renderTaskList();
+document.getElementById("print").addEventListener("click", async () => {
+	await renderTasksOnChart();
+	await renderTaskList();
 	window.print();
 });
 
@@ -337,10 +326,10 @@ chartTitleElement.addEventListener("input", () => {
 initHillChart();
 
 // Load tasks when the page loads
-document.addEventListener("DOMContentLoaded", () => {
-	loadTasks();
-	renderTasksOnChart();
+document.addEventListener("DOMContentLoaded", async () => {
 	loadChartTitle();
-	renderTaskList();
+	await loadTasks();
+	await renderTasksOnChart();
+	await renderTaskList();
 });
 
